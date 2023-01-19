@@ -109,7 +109,7 @@ export async function appRoutes(app: FastifyInstance) {
                     day_id: day.id,
                     habit_id: id,
                 }
-            }
+            }   
         });
 
         if(dayHabit) {
@@ -130,6 +130,41 @@ export async function appRoutes(app: FastifyInstance) {
             });
         }
 
-    })
+    });
+
+    app.get('/summary', async () => {
+        // amount = quantos hábitos eram POSSÍVEIS completar
+        // completed = hábitos de fato completados
+        // [ {date: 17/01, amount: 5, completed: 3}, {}, {}]
+
+        // Query mais complexa, mais condições, relacionamentos => Escrever o SQL na mão (RAW), para performar e não fazer muitas querys pelo ORM
+
+        const summary = await prisma.$queryRaw`
+            SELECT 
+                D.id, 
+                D.date,
+                (
+                    SELECT 
+                        cast(count(*) as float)
+                    FROM day_habits DH
+                    WHERE DH.day_id = D.id
+                ) as completed,
+                (
+                    SELECT
+                        cast(count(*) as float)
+                    FROM habit_week_days HWD
+                    JOIN habits H
+                        ON H.id = HWD.habit_id
+                    WHERE 
+                        HWD.week_day = cast(strftime ('%w', D.date / 1000.0, 'unixepoch') as int)
+                        AND H.created_at <= D.date
+                ) as amount
+            FROM days D
+        `;
+
+        // https://www.sqlite.org/lang_datefunc.html
+
+        return summary;
+    });
 }
  
