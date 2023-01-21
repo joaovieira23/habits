@@ -1,6 +1,7 @@
 import { Check } from "phosphor-react";
 import * as Checkbox from '@radix-ui/react-checkbox';
-import { useState } from "react";
+import { FormEvent, useState } from "react";
+import { api } from "../lib/axios";
 
 const availableWeekDays = [
     'Domingo',
@@ -28,18 +29,38 @@ export function NewHabitForm() {
         }
     }
 
+    async function createNewHabit(event: FormEvent) {
+        event.preventDefault();
+
+        if(!title || weekDays.length === 0) {
+            return;
+        };
+
+        await api.post('habits', {
+            title,
+            weekDays
+        });
+
+        setTitle('');
+        setWeekDays([]);
+
+        alert('Hábito criado com sucesso!')
+    }
+
     return (
-        <form className="w-full flex flex-col mt-6">
+        <form onSubmit={createNewHabit} className="w-full flex flex-col mt-6">
             <label htmlFor="title" className="font-semibold leading-tight">
                 Qual seu compromentimento?
             </label>
 
             <input
                 type="text"
+                onChange={(event) => setTitle(event.target.value)}
                 id="title"
                 placeholder="ex.: Exercícios, dormir bem, etc..."
                 className="p-4 rounded-lg mt-3 bg-zinc-800 text-white placeholder:text-zinc-400"
                 autoFocus
+                value={title}
             />
 
             <label htmlFor="" className="font-semibold leading-tight mt-4">
@@ -51,6 +72,7 @@ export function NewHabitForm() {
                     return (
                         <Checkbox.Root 
                             key={weekDay} 
+                            checked={weekDays.includes(index)}
                             className='flex items-center gap-3 group'
                             onCheckedChange={() => handleToggleWeekDay(index)}
                         >
